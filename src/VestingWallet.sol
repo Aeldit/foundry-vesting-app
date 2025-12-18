@@ -40,7 +40,7 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         });
 
         // N'oubliez pas de vérifier que les fonds sont bien transférés au contrat !
-        // enleve a _TOKEN totalAmount
+        // enleve a beneficiary totalAmount et les donnes à _TOKEN
         _TOKEN.transferFrom(beneficiary, address(this), totalAmount); // Transfer à la map interne de IERC20
     }
 
