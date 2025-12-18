@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {VestingWallet} from "../src/VestingWallet.sol";
 import {MockERC20} from "../src/MockERC20.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract VestingWalletTest is Test {
     VestingWallet public v;
@@ -12,7 +13,7 @@ contract VestingWalletTest is Test {
 
     // Cette fonction s'exécute avant chaque test.
     function setUp() public {
-        fakeToken = new MockERC20("fakeToken", "ft", 5);
+        fakeToken = new MockERC20("fakeToken", "ft", 50);
         v = new VestingWallet(address(fakeToken));
     }
 
@@ -20,25 +21,30 @@ contract VestingWalletTest is Test {
     function test_CreateVestingSchedule() public {
         address beneficiary = address(0x180697f268232169e355ee184b795407aDCB329A);
 
-        // 5 tokens per second for 10 second after 11 seconds have passed
+        // 4 tokens per second for 10 second after 11 seconds have passed
         uint256 cliff = 11;
         uint256 duration = 10;
-        uint256 totalAmount = 5;
-        console.log(fakeToken.balanceOf(beneficiary));
+        uint256 totalAmount = 40;
+        print("fakeToken balance : ", fakeToken.balanceOf(beneficiary));
 
         benefApprove(beneficiary, totalAmount);
 
         v.createVestingSchedule(beneficiary, totalAmount, cliff, duration);
 
-        vm.warp(block.timestamp + 14);
+        vm.warp(block.timestamp + 20);
+        print("Pre claim : ", v.getVestedAmount(beneficiary));
         v.claimVestedTokens(beneficiary);
+        print("Post claim : ", v.getVestedAmount(beneficiary));
 
-        // assertEq vérifie si les deux valeurs sont égales.
         assertEq(v.viewVestingSchedules(beneficiary).cliff, cliff, "The beneficiary should be %d");
     }
 
     function benefApprove(address beneficiary, uint256 amount) private {
         vm.prank(beneficiary);
         fakeToken.approve(address(v), amount);
+    }
+
+    function print(string memory s, uint256 value) private pure {
+        console.log(string.concat(s, Strings.toString(value)));
     }
 }

@@ -55,13 +55,22 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         }
 
         uint256 claimableAmount = getVestedAmount(beneficiary);
+
+        // Check underflow
         if (v.totalAmount < claimableAmount) {
-            console.log("The total amount is lower than the claimed amount, aborting'");
+            console.log("The total amount is lower than the claimed amount, aborting");
             return;
         }
         v.totalAmount -= claimableAmount;
+
+        // Check overflow
+        if (v.releasedAmount >= type(uint256).max - claimableAmount) {
+            console.log("Released amount would overflow if the claimableAmount was added to it.");
+            return;
+        }
         v.releasedAmount += claimableAmount;
 
+        // Send tokens to the user
         (bool sent,) = msg.sender.call{value: claimableAmount}("");
         require(sent, "Failed to send Ether");
     }
@@ -79,10 +88,12 @@ contract VestingWallet is Ownable, ReentrancyGuard {
             return 0;
         }
 
-        // if ()
-
-        // On peut claim le nombre de secondes depuis le debut du block
-        return current - v.totalAmount;
+        uint256 timeClaimable = current - (v.creationTime + v.cliff);
+        if (timeClaimable < v.releasedAmount) {
+            console.log("Released amount is lower than the timeClaimable amount");
+            return 0;
+        }
+        return timeClaimable - v.releasedAmount;
     }
 
     function cliffTimeNotReached(VestingSchedule memory v, uint256 current) private pure returns (bool) {
