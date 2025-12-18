@@ -28,7 +28,6 @@ contract VestingWalletTest is Test {
         print("fakeToken balance : ", fakeToken.balanceOf(beneficiary));
 
         benefApprove(beneficiary, totalAmount);
-
         v.createVestingSchedule(beneficiary, totalAmount, cliff, duration);
 
         vm.warp(block.timestamp + 20);
@@ -44,6 +43,7 @@ contract VestingWalletTest is Test {
         fakeToken.approve(address(v), amount);
     }
 
+    // Helper to print a string and an integer value
     function print(string memory s, uint256 value) private pure {
         console.log(string.concat(s, Strings.toString(value)));
     }
