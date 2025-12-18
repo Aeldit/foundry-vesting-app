@@ -26,7 +26,8 @@ contract VestingWalletTest is Test {
         uint256 totalAmount = 5;
         console.log(fakeToken.balanceOf(beneficiary));
 
-        fakeToken.approve(address(v), totalAmount, {'from':beneficiary});
+        benefApprove(beneficiary, totalAmount);
+
         v.createVestingSchedule(beneficiary, totalAmount, cliff, duration);
 
         vm.warp(block.timestamp + 14);
@@ -34,5 +35,10 @@ contract VestingWalletTest is Test {
 
         // assertEq vérifie si les deux valeurs sont égales.
         assertEq(v.viewVestingSchedules(beneficiary).cliff, cliff, "The beneficiary should be %d");
+    }
+
+    function benefApprove(address beneficiary, uint256 amount) private {
+        vm.prank(beneficiary);
+        fakeToken.approve(address(v), amount);
     }
 }
