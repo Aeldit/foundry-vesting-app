@@ -99,6 +99,7 @@ contract VestingWallet is Ownable, ReentrancyGuard {
             return 0;
         }
 
+        // FIX: Wrong calcul
         uint256 claimable = (v.duration * 10e18) / (v.totalAmount - v.releasedAmount);
         console.log("claimable");
         console.log(claimable);
