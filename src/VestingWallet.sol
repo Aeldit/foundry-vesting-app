@@ -36,7 +36,11 @@ contract VestingWallet is Ownable, ReentrancyGuard {
 
         // Crée et stocke un nouveau calendrier de vesting
         vestingSchedules[beneficiary] = VestingSchedule({
-            creationTime: block.timestamp, cliff: cliff, duration: duration, totalAmount: totalAmount, releasedAmount: 0
+            creationTime: block.timestamp,
+            cliff: cliff,
+            duration: duration,
+            totalAmount: totalAmount,
+            releasedAmount: 0 ether
         });
 
         // N'oubliez pas de vérifier que les fonds sont bien transférés au contrat !
@@ -57,6 +61,8 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         uint256 claimableAmount = getVestedAmount(beneficiary);
 
         // Check underflow
+        console.log(v.totalAmount);
+        console.log(claimableAmount);
         if (v.totalAmount < claimableAmount) {
             console.log("The total amount is lower than the claimed amount, aborting");
             return;
@@ -71,8 +77,7 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         v.releasedAmount += claimableAmount;
 
         // Send tokens to the user
-        (bool sent,) = msg.sender.call{value: claimableAmount}("");
-        require(sent, "Failed to send Ether");
+        _TOKEN.transfer(beneficiary, claimableAmount);
     }
 
     function getVestedAmount(address beneficiary) public view returns (uint256) {
@@ -82,18 +87,27 @@ contract VestingWallet is Ownable, ReentrancyGuard {
 
         uint256 current = block.timestamp;
 
-        // Attention : la libération est linéaire après le cliff.
         if (cliffTimeNotReached(v, current)) {
             console.log("Cliff time not reached yet");
             return 0;
         }
 
+        // Attention : la libération est linéaire après le cliff.
         uint256 timeClaimable = current - (v.creationTime + v.cliff);
         if (timeClaimable < v.releasedAmount) {
-            console.log("Released amount is lower than the timeClaimable amount");
+            console.log("Cliff not reached yet, you cannnot claim anything");
             return 0;
         }
-        return timeClaimable - v.releasedAmount;
+
+        uint256 claimable = (v.duration * 10e18) / (v.totalAmount - v.releasedAmount);
+        console.log("claimable");
+        console.log(claimable);
+        uint256 timeDiff = (current * 10e18 - v.cliff * 10e18);
+        if (timeDiff < claimable) {
+            console.log("current is lower than claimable");
+            return 0;
+        }
+        return timeDiff - claimable;
     }
 
     function cliffTimeNotReached(VestingSchedule memory v, uint256 current) private pure returns (bool) {

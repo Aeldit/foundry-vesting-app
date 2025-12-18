@@ -13,27 +13,25 @@ contract VestingWalletTest is Test {
 
     // Cette fonction s'exécute avant chaque test.
     function setUp() public {
-        fakeToken = new MockERC20("fakeToken", "ft", 50);
+        fakeToken = new MockERC20("fakeToken", "ft", 50 ether);
         v = new VestingWallet(address(fakeToken));
     }
 
-    // Test pour vérifier la fonction setNumber
     function test_CreateVestingSchedule() public {
         address beneficiary = address(0x180697f268232169e355ee184b795407aDCB329A);
 
-        // 4 tokens per second for 10 second after 11 seconds have passed
         uint256 cliff = 11;
         uint256 duration = 10;
-        uint256 totalAmount = 40;
+        uint256 totalAmount = 10 ether;
         print("fakeToken balance : ", fakeToken.balanceOf(beneficiary));
 
         benefApprove(beneficiary, totalAmount);
         v.createVestingSchedule(beneficiary, totalAmount, cliff, duration);
 
         vm.warp(block.timestamp + 20);
-        print("Pre claim : ", v.getVestedAmount(beneficiary));
+        print("Bef claim : ", v.getVestedAmount(beneficiary));
         v.claimVestedTokens(beneficiary);
-        print("Post claim : ", v.getVestedAmount(beneficiary));
+        print("Aft claim : ", v.getVestedAmount(beneficiary));
 
         assertEq(v.viewVestingSchedules(beneficiary).cliff, cliff, "The beneficiary should be %d");
     }
