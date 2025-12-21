@@ -22,16 +22,14 @@ contract VestingWalletTest is Test {
 
         uint256 cliff = 11;
         uint256 duration = 10;
-        uint256 totalAmount = 10 ether;
+        uint256 totalAmount = 20 ether;
         print("fakeToken balance : ", fakeToken.balanceOf(beneficiary));
 
         benefApprove(beneficiary, totalAmount);
         v.createVestingSchedule(beneficiary, totalAmount, cliff, duration);
 
-        vm.warp(block.timestamp + 20);
-        print("Bef claim : ", v.getVestedAmount(beneficiary));
+        vm.warp(block.timestamp + 12);
         v.claimVestedTokens(beneficiary);
-        print("Aft claim : ", v.getVestedAmount(beneficiary));
 
         assertEq(v.viewVestingSchedules(beneficiary).cliff, cliff, "The beneficiary should be %d");
     }

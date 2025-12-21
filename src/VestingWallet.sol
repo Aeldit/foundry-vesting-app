@@ -5,6 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract VestingWallet is Ownable, ReentrancyGuard {
     struct VestingSchedule {
@@ -17,6 +18,7 @@ contract VestingWallet is Ownable, ReentrancyGuard {
 
     IERC20 public immutable _TOKEN;
     mapping(address => VestingSchedule) public vestingSchedules;
+    mapping(address => uint256) private vestingAccessLog;
 
     constructor(address tokenAddress) Ownable(msg.sender) {
         _TOKEN = IERC20(tokenAddress);
@@ -61,8 +63,6 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         uint256 claimableAmount = getVestedAmount(beneficiary);
 
         // Check underflow
-        console.log(v.totalAmount);
-        console.log(claimableAmount);
         if (v.totalAmount < claimableAmount) {
             console.log("The total amount is lower than the claimed amount, aborting");
             return;
@@ -80,9 +80,8 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         _TOKEN.transfer(beneficiary, claimableAmount);
     }
 
+    // Fonction pour calculer le montant total de jetons libérés à un instant T
     function getVestedAmount(address beneficiary) public view returns (uint256) {
-        // Fonction pour calculer le montant total de jetons libérés à un instant T.
-
         VestingSchedule memory v = vestingSchedules[beneficiary];
 
         uint256 current = block.timestamp;
@@ -93,22 +92,25 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         }
 
         // Attention : la libération est linéaire après le cliff.
-        uint256 timeClaimable = current - (v.creationTime + v.cliff);
-        if (timeClaimable < v.releasedAmount) {
+        if (current < v.creationTime + v.cliff) {
             console.log("Cliff not reached yet, you cannnot claim anything");
             return 0;
         }
 
-        // FIX: Wrong calcul
-        uint256 claimable = (v.duration * 10e18) / (v.totalAmount - v.releasedAmount);
-        console.log("claimable");
-        console.log(claimable);
-        uint256 timeDiff = (current * 10e18 - v.cliff * 10e18);
-        if (timeDiff < claimable) {
-            console.log("current is lower than claimable");
-            return 0;
+        uint256 perSecond = v.totalAmount / v.duration;
+        uint256 remaining = v.totalAmount - v.releasedAmount;
+        uint256 elapsedTimeSinceCreation = current - v.creationTime - v.cliff;
+        uint256 claimable = elapsedTimeSinceCreation * perSecond;
+        if (claimable > remaining) {
+            console.log("Not enough tokens remaining, claiming the rest.");
+            return remaining;
         }
-        return timeDiff - claimable;
+
+        // console.log(string.concat("Per second = ", Strings.toString(perSecond)));
+        // console.log(string.concat("Remaining = ", Strings.toString(remaining)));
+        // console.log(string.concat("Elapsed since creation = ", Strings.toString(elapsedTimeSinceCreation)));
+        // console.log(string.concat("Claimable = ", Strings.toString(claimable)));
+        return claimable;
     }
 
     function cliffTimeNotReached(VestingSchedule memory v, uint256 current) private pure returns (bool) {
