@@ -16,15 +16,31 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         uint256 releasedAmount;
     }
 
+    struct LogEntry {
+        uint256 accessTime;
+        address userAddress;
+    }
+
     IERC20 public immutable _TOKEN;
     mapping(address => VestingSchedule) public vestingSchedules;
-    mapping(address => uint256) private vestingAccessLog;
+    LogEntry[] private accessLog;
 
     constructor(address tokenAddress) Ownable(msg.sender) {
         _TOKEN = IERC20(tokenAddress);
     }
 
-    function viewVestingSchedules(address beneficiary) public view returns (VestingSchedule memory) {
+    function logAccess() private {
+        accessLog.push(LogEntry({accessTime: block.timestamp, userAddress: msg.sender}));
+    }
+
+    function checkAccessLog() public {
+        for (uint256 i = 0; i < accessLog.length; ++i) {
+            console.log(string.concat());
+        }
+    }
+
+    function viewVestingSchedules(address beneficiary) public returns (VestingSchedule memory) {
+        logAccess();
         return vestingSchedules[beneficiary];
     }
 
@@ -32,6 +48,8 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         public
         onlyOwner
     {
+        logAccess();
+
         // cliff = delai avant que argent commence a tomber
         // ex: cliff = 4 mois et duration = 10 mois => commence a recevoir argent apres 4 mois pendant 10 mois
         // si 10 jetons sur 10 mois <=> 1 jeton max par mois
@@ -51,6 +69,8 @@ contract VestingWallet is Ownable, ReentrancyGuard {
     }
 
     function claimVestedTokens(address beneficiary) public nonReentrant {
+        logAccess();
+
         // Logique pour permettre à un bénéficiaire de réclamer les jetons déjà libérés.
         // Calculez le montant disponible et transférez-le
         VestingSchedule memory v = vestingSchedules[beneficiary];
@@ -81,7 +101,9 @@ contract VestingWallet is Ownable, ReentrancyGuard {
     }
 
     // Fonction pour calculer le montant total de jetons libérés à un instant T
-    function getVestedAmount(address beneficiary) public view returns (uint256) {
+    function getVestedAmount(address beneficiary) public returns (uint256) {
+        logAccess();
+
         VestingSchedule memory v = vestingSchedules[beneficiary];
 
         uint256 current = block.timestamp;
