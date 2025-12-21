@@ -31,6 +31,8 @@ contract VestingWalletTest is Test {
         vm.warp(block.timestamp + 12);
         v.claimVestedTokens(beneficiary);
 
+        v.checkAccessLog();
+
         assertEq(v.viewVestingSchedules(beneficiary).cliff, cliff, "The beneficiary should be %d");
     }
 

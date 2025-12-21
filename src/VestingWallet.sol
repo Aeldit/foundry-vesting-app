@@ -33,9 +33,16 @@ contract VestingWallet is Ownable, ReentrancyGuard {
         accessLog.push(LogEntry({accessTime: block.timestamp, userAddress: msg.sender}));
     }
 
-    function checkAccessLog() public {
+    function checkAccessLog() public view {
+        console.log("Access log (accessTime => address):");
         for (uint256 i = 0; i < accessLog.length; ++i) {
-            console.log(string.concat());
+            console.log(
+                string.concat(
+                    Strings.toString(accessLog[i].accessTime),
+                    " => ",
+                    Strings.toHexString(uint256(uint160(accessLog[i].userAddress)))
+                )
+            );
         }
     }
 
